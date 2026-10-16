@@ -1,0 +1,599 @@
+<title>Unbirthday Rehearsal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Alegreya+Sans:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: a white page with one row of illustrated place cards that slides sideways; a two-step switcher moves from the cards to the quiz.
+   Deliberately white-only (the user asked for a white theme), so there are no dark-mode blocks. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff;
+  --surface:#f5f7f6;
+  --card:#ffffff;
+  --ink:#172625;
+  --muted:#586a67;
+  --line:#dbe3e0;
+  --red:#a8122c;
+  --gold:#8a6512;
+  --teal:#1d5a55;
+  --teal-soft:#e3efec;
+  --on-teal:#ffffff;
+  --good:#256b34;
+  --good-bg:#e4f3e7;
+  --bad:#a8122c;
+  --bad-bg:#fbe8eb;
+  --plate:#fbfbf8;
+  --shadow:0 1px 2px rgba(15,40,38,.06),0 10px 28px rgba(15,40,38,.08);
+  --display:"IM Fell English SC","Iowan Old Style",Georgia,serif;
+  --serif:"IM Fell English","Iowan Old Style",Georgia,serif;
+  --body:"Alegreya Sans","Segoe UI",system-ui,sans-serif;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--body); font-size:17px; line-height:1.5;
+}
+.wrap{
+  max-width:1040px; margin:0 auto;
+  padding-block:28px 64px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:grid; gap:28px;
+}
+h1,h2,h3{text-wrap:balance; margin:0}
+p{margin:0}
+button,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--teal); outline-offset:2px}
+
+/* Header */
+.top{display:grid; gap:18px}
+.eyebrow{font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700}
+.brand{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:12px 24px}
+.brand h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem, 5vw, 3rem); line-height:1.05}
+.brand h1 .amp{color:var(--red)}
+select{
+  background:var(--card); border:1px solid var(--line); border-radius:8px;
+  padding:8px 34px 8px 12px; min-width:0; max-width:100%;
+  appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;
+  background-size:5px 5px,5px 5px; background-repeat:no-repeat;
+}
+
+/* Step switcher */
+.steps{display:flex; gap:6px; padding:4px; background:var(--surface); border:1px solid var(--line); border-radius:12px; width:fit-content; max-width:100%}
+.steps button{
+  border:0; background:transparent; padding:9px 16px; border-radius:9px; cursor:pointer;
+  font-weight:700; color:var(--muted); display:flex; gap:8px; align-items:center;
+}
+.steps button .n{font-family:var(--display); font-size:1.05rem; color:inherit}
+.steps button[aria-selected="true"]{background:var(--teal); color:var(--on-teal)}
+
+/* Cards */
+.section-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:end; gap:10px 20px}
+.section-head h2{font-family:var(--display); font-weight:400; font-size:1.7rem}
+.section-head p{color:var(--muted); max-width:60ch}
+.toggle{display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; font-weight:500}
+.toggle input{width:18px; height:18px; accent-color:var(--teal)}
+
+/* Carousel */
+/* One card at a time, like a photo post: swipe, side arrows on the picture, dots underneath. */
+.carousel{display:grid; gap:14px; width:100%; max-width:520px; margin:0 auto; min-width:0}
+.stage{position:relative; min-width:0}
+.track{
+  position:relative; display:grid; grid-auto-flow:column; grid-auto-columns:100%; gap:0;
+  overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory;
+  scroll-behavior:smooth; scrollbar-width:none; border-radius:14px;
+}
+.track::-webkit-scrollbar{display:none}
+.track > *{scroll-snap-align:center; scroll-snap-stop:always}
+.arrow-zone{
+  position:absolute; left:0; right:0; top:0; aspect-ratio:4 / 3; max-width:100%;
+  display:flex; align-items:center; justify-content:space-between; padding:0 10px; pointer-events:none;
+}
+.arrow{
+  pointer-events:auto; width:36px; height:36px; border-radius:50%; border:0;
+  background:rgba(255,255,255,.92); box-shadow:0 1px 4px rgba(0,0,0,.25);
+  cursor:pointer; font-size:1.35rem; line-height:1; color:var(--ink); display:grid; place-items:center;
+}
+.arrow:disabled{visibility:hidden}
+.count{
+  position:absolute; top:12px; left:12px; font-size:.8rem; font-weight:700; font-variant-numeric:tabular-nums;
+  color:#fff; background:rgba(23,38,37,.72); padding:3px 9px; border-radius:999px; pointer-events:none;
+}
+.dots{display:flex; gap:7px; justify-content:center; flex-wrap:wrap}
+.dot{
+  width:8px; height:8px; padding:0; border:0; border-radius:50%; background:var(--line); cursor:pointer;
+}
+.dot[aria-current="true"]{background:var(--teal); transform:scale(1.2)}
+
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+  display:grid; grid-template-rows:auto 1fr; align-content:start; position:relative; min-width:0;
+}
+.plate{position:relative; aspect-ratio:4 / 3; max-width:100%; background:var(--plate); border-bottom:1px solid var(--line); margin:0}
+.plate img{width:100%; height:100%; object-fit:cover; display:block}
+.plate figcaption{
+  position:absolute; left:10px; bottom:8px; font-size:.7rem; color:var(--muted);
+  background:rgba(255,255,255,.88); padding:2px 7px; border-radius:6px;
+}
+.card .body{padding:18px 22px 22px; display:grid; gap:12px; align-content:start; min-width:0}
+.card .idx{
+  position:absolute; top:12px; right:12px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:5px 8px 4px;
+  font-family:var(--display); color:var(--red); font-size:1rem; line-height:1; text-align:center;
+}
+.card .idx small{display:block; font-size:.58rem; letter-spacing:.12em; color:var(--muted); font-family:var(--body); font-weight:700; margin-bottom:3px}
+.card h3{font-family:var(--display); font-weight:400; font-size:1.55rem; line-height:1.1}
+.card .role{font-family:var(--serif); font-style:italic; color:var(--teal); font-size:1.05rem; margin-top:-6px}
+.card .quote{font-family:var(--serif); font-size:1.08rem; border-left:2px solid var(--gold); padding-left:12px; color:var(--ink)}
+.card dl{margin:0; display:grid; gap:10px}
+.card dt{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:800}
+.card dd{margin:2px 0 0}
+.card ul{margin:2px 0 0; padding-left:18px; display:grid; gap:4px}
+.card .who{font-weight:700}
+.card .held{color:var(--muted); font-style:italic}
+.card .private{border-top:1px dashed var(--line); padding-top:12px}
+
+.mine{border:2px solid var(--gold); box-shadow:var(--shadow)}
+.mine .ribbon{
+  justify-self:start; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; font-weight:800;
+  color:var(--gold); border:1px solid var(--gold); border-radius:999px; padding:3px 10px; background:var(--card);
+}
+.hint-pick{
+  border:1px dashed var(--line); border-radius:12px; padding:14px 18px; color:var(--muted); background:var(--surface);
+}
+
+.next-row{display:flex; justify-content:flex-end}
+.btn{
+  border:1px solid var(--teal); background:var(--teal); color:var(--on-teal);
+  padding:11px 20px; border-radius:10px; font-weight:800; cursor:pointer;
+}
+.btn.ghost{background:transparent; color:var(--teal)}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+
+/* Quiz */
+.quiz{display:grid; gap:20px; max-width:760px}
+.modes{display:flex; flex-wrap:wrap; gap:8px}
+.chip{
+  border:1px solid var(--line); background:var(--card); border-radius:999px; padding:7px 14px; cursor:pointer; font-weight:700; color:var(--muted);
+}
+.chip[aria-pressed="true"]{border-color:var(--teal); color:var(--teal); background:var(--teal-soft)}
+.chip:disabled{opacity:.45; cursor:not-allowed}
+
+.panel{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px; display:grid; gap:18px; box-shadow:var(--shadow)}
+.meta{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:.9rem; color:var(--muted); font-weight:700; font-variant-numeric:tabular-nums}
+.bar{height:6px; background:var(--teal-soft); border-radius:999px; overflow:hidden}
+.bar span{display:block; height:100%; background:var(--teal); transition:width .3s ease}
+.tag{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--red); font-weight:800}
+.q{font-family:var(--serif); font-size:1.45rem; line-height:1.3}
+.opts{display:grid; gap:10px}
+.opt{
+  text-align:left; border:1px solid var(--line); background:var(--surface); border-radius:10px;
+  padding:12px 14px; cursor:pointer; display:grid; grid-template-columns:28px 1fr; gap:10px; align-items:start;
+}
+.opt:hover:not(:disabled){border-color:var(--teal)}
+.opt .k{font-family:var(--display); color:var(--muted); font-size:1.05rem; line-height:1.4}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg); border-color:var(--good)}
+.opt.right .k{color:var(--good)}
+.opt.wrong{background:var(--bad-bg); border-color:var(--bad)}
+.opt.wrong .k{color:var(--bad)}
+.feedback{font-weight:700}
+.feedback.ok{color:var(--good)}
+.feedback.no{color:var(--bad)}
+.feedback .note{display:block; font-weight:400; color:var(--muted); margin-top:2px}
+.actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+
+.result h3{font-family:var(--display); font-weight:400; font-size:2rem}
+.score{font-family:var(--display); font-size:3.2rem; line-height:1; color:var(--teal); font-variant-numeric:tabular-nums}
+.missed{display:grid; gap:12px; margin:0; padding:0; list-style:none}
+.missed li{border-top:1px solid var(--line); padding-top:12px; display:grid; gap:4px}
+.missed .mq{font-family:var(--serif); font-size:1.1rem}
+.missed .ma{color:var(--good); font-weight:700}
+.hint{color:var(--muted); font-size:.92rem}
+
+@media (max-width:520px){
+  .card .body{padding:16px 18px 20px}
+  .panel{padding:18px}
+  .q{font-size:1.25rem}
+}
+@media (prefers-reduced-motion: reduce){ .bar span{transition:none} .track{scroll-behavior:auto} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div>
+        <p class="eyebrow">The Mad Hatter's Unbirthday</p>
+        <h1>Character cards <span class="amp">&amp;</span> rehearsal</h1>
+      </div>
+    </div>
+    <div class="steps" role="tablist" aria-label="Steps">
+      <button id="tab-cards" role="tab" aria-selected="true" aria-controls="step-cards"><span class="n">1</span> Character cards</button>
+      <button id="tab-quiz" role="tab" aria-selected="false" aria-controls="step-quiz"><span class="n">2</span> Quiz</button>
+    </div>
+  </header>
+
+  <section id="step-cards" role="tabpanel" aria-labelledby="tab-cards" style="display:grid; gap:22px">
+    <div class="section-head">
+      <div style="display:grid; gap:4px">
+        <h2>The guests</h2>
+        <p>Public information only. Each guest's story, connections, mission and secret stay on their own printed card.</p>
+      </div>
+    </div>
+    <div class="carousel" aria-roledescription="carousel" aria-label="Character cards">
+      <div class="stage">
+        <div class="track" id="track" tabindex="0" aria-label="Swipe or use arrow keys to browse cards"></div>
+        <div class="arrow-zone">
+          <button class="arrow" id="prev" aria-label="Previous card">&#8249;</button>
+          <button class="arrow" id="next" aria-label="Next card">&#8250;</button>
+        </div>
+        <span class="count" id="count" aria-live="polite">1 / 9</span>
+      </div>
+      <div class="dots" id="dots" role="group" aria-label="Jump to a card"></div>
+    </div>
+    <div class="next-row"><button class="btn" id="to-quiz">Start the quiz</button></div>
+  </section>
+
+  <section id="step-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+    <div class="quiz">
+      <div class="section-head">
+        <div style="display:grid; gap:4px">
+          <h2>Quiz</h2>
+          <p>Twelve questions about all nine guests, using public information only.</p>
+        </div>
+      </div>
+      <div class="modes" role="group" aria-label="Quiz topic">
+        <button class="chip" id="mode-mixed" data-mode="mixed" aria-pressed="true">Everything</button>
+        <button class="chip" id="mode-who" data-mode="who" aria-pressed="false">Who's who</button>
+        <button class="chip" id="mode-lore" data-mode="lore" aria-pressed="false">Backstories</button>
+      </div>
+      <div id="quiz-slot"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  // Public information only: no stories, connections, missions or secrets from the cards.
+  const CHARS = [
+    {id:1, name:"The White Rabbit", short:"White Rabbit", title:"The Nervous Royal Messenger",
+     costume:"Waistcoat, bow tie, pocket watch",
+     personality:"Anxious, secretive, overly polite, and obsessed with punctuality",
+     quote:"Oh dear! Oh dear! You're terribly late!",
+     lore:"From Lewis Carroll's Alice's Adventures in Wonderland (1865). Alice first spots him hurrying past, checking a pocket watch and muttering that he'll be late, and follows him down the rabbit hole. He serves the King and Queen of Hearts as their herald, reads out the charges at the Knave of Hearts' trial, and lives in constant fear of the Queen's temper.",
+     facts:[["What does the White Rabbit carry and keep checking?","A pocket watch",["A carrot","A lantern","A walking stick"]],
+            ["Who does the White Rabbit serve?","The King and Queen of Hearts",["The Duchess","The Caterpillar","The March Hare"]]]},
+    {id:2, name:"Little Red Riding Hood", short:"Little Red", title:"The Not-So-Innocent Girl",
+     costume:"Red hooded cape",
+     personality:"Sweet, charming, innocent-looking, and secretly cunning",
+     quote:"What big secrets you have, my dear.",
+     lore:"From the old folk tale written down by Charles Perrault (1697) and the Brothers Grimm (1812). Red is sent through the woods with a basket for her grandmother. A wolf learns where she's going, races ahead, swallows Grandma and waits in her bed wearing her nightclothes, which leads to the famous \"What big eyes you have!\" In the Grimm version a huntsman cuts them both free.",
+     facts:[["Where was Little Red going with her basket?","To her grandmother's house",["To the village school","To the market in town","To visit a friend across the river"]],
+            ["In her tale, where does the Wolf wait for Red?","In Grandma's bed, wearing her nightclothes",["Up a tree","Under a bridge","In the woodshed"]]]},
+    {id:3, name:"The King of Hearts", short:"King of Hearts", title:"The Nervous Monarch",
+     costume:"Crown, playing cards, red and black",
+     personality:"Polite, cautious, easily flustered, and afraid of confrontation",
+     quote:"Long live the King… hopefully!",
+     lore:"From Carroll's Wonderland. The meek husband of the Queen of Hearts, he presides over the trial of the Knave of Hearts, who is accused of stealing the Queen's tarts. While the Queen sentences everyone to lose their heads, the King quietly pardons them behind her back.",
+     facts:[["What crime is tried in the King of Hearts' court?","Stealing the Queen's tarts",["Cheating at croquet","Singing out of tune","Forgetting the Queen's birthday"]],
+            ["What does the King quietly do for people the Queen sentences?","Pardons them",["Executes them himself","Banishes them from Wonderland","Turns them into playing cards"]]]},
+    {id:4, name:"The Mad Hatter", short:"Mad Hatter", title:"The Eccentric Host",
+     costume:"Top hat, colourful accessories, polka dot bow tie",
+     personality:"Theatrical, eccentric, mischievous, and wonderfully unpredictable",
+     quote:"We're all mad here!",
+     lore:"From Carroll's Wonderland. He hosts a never-ending tea party with the March Hare and the sleepy Dormouse. After he quarrelled with Time while singing for the Queen, the clock stopped at six o'clock forever, so it is always teatime. He asks the riddle that has no answer, \"Why is a raven like a writing desk?\", and in Disney's 1951 film he sings \"A Very Merry Unbirthday\".",
+     facts:[["Why is it always teatime at the Hatter's table?","Time stopped at six o'clock after he quarrelled with Time",["The March Hare insists on it","He forgot how to cook dinner","Tea is the only drink in Wonderland"]],
+            ["What is the Hatter's famous riddle?","Why is a raven like a writing desk?",["What has keys but can't open locks?","What gets wetter the more it dries?","What has a neck but no head?"]]]},
+    {id:5, name:"Alice", short:"Alice", title:"The Curious Investigator",
+     costume:"Blue dress, apron, headband",
+     personality:"Curious, clever, adventurous, and always asking questions",
+     quote:"Curiouser and curiouser!",
+     lore:"The heroine of Carroll's Wonderland. A bored, curious Victorian girl, she follows the White Rabbit down a rabbit hole. She shrinks and grows by eating and drinking things labelled \"Eat me\" and \"Drink me\", questions everyone she meets, and at the Queen's trial declares they're \"nothing but a pack of cards!\" just before she wakes up.",
+     facts:[["How did Alice get to Wonderland?","She followed the White Rabbit down a rabbit hole",["She climbed a beanstalk","She stepped through a wardrobe","A tornado carried her there"]],
+            ["What made Alice shrink and grow?","Food and drink labelled “Eat me” and “Drink me”",["Fairy dust","A wizard's potion","A wishing well"]]]},
+    {id:6, name:"The Big Bad Wolf", short:"Big Bad Wolf", title:"The Misunderstood Villain",
+     costume:"Jeans or old pants, suspenders, wolf nose makeup, hat",
+     personality:"Charming, sarcastic, defensive, and a little intimidating",
+     quote:"Perhaps the Wolf isn't so bad after all.",
+     lore:"The villain of Little Red Riding Hood. He tricks Red into telling him where her grandmother lives, then disguises himself as Grandma to catch her. A wolf is also the villain who \"huffs and puffs\" at the Three Little Pigs, and the name \"Big Bad Wolf\" became famous through Disney's 1933 song \"Who's Afraid of the Big Bad Wolf?\"",
+     facts:[["How does the Wolf trick Little Red?","He disguises himself as her grandmother",["He pretends to be a huntsman","He hides in her basket","He pretends to be a lost puppy"]],
+            ["Which other tale has a Big Bad Wolf who “huffs and puffs”?","The Three Little Pigs",["Cinderella","Jack and the Beanstalk","Snow White"]]]},
+    {id:7, name:"The Queen of Hearts", short:"Queen of Hearts", title:"The Temperamental Ruler",
+     costume:"Red or black, crown, heart accessories",
+     personality:"Dramatic, commanding, impatient, and accustomed to getting your way",
+     quote:"Off with their heads!",
+     lore:"From Carroll's Wonderland. The furious ruler of Wonderland settles almost every problem by shouting \"Off with their heads!\" She plays croquet with flamingos as mallets and hedgehogs as balls, and her playing-card gardeners paint the white roses red because they planted the wrong colour and fear what she'll do.",
+     facts:[["What does the Queen of Hearts use as croquet mallets?","Flamingos",["Umbrellas","Swordfish","Candy canes"]],
+            ["Why do her card gardeners paint the roses red?","They planted white roses by mistake and fear her temper",["Red roses smell sweeter","It is the custom every spring","The red paint was a gift"]]]},
+    {id:8, name:"Captain Hook", short:"Captain Hook", title:"The Vengeful Pirate",
+     costume:"Baggy shirt and pants, red scarf around head or waist",
+     personality:"Dramatic, arrogant, charming, and easily offended",
+     quote:"Revenge is a dish best served at tea time.",
+     lore:"From J. M. Barrie's Peter Pan (play 1904, novel 1911). Captain of the pirate ship Jolly Roger and Peter Pan's archenemy. Peter cut off one of his hands in a duel and fed it to a crocodile, which liked the taste and has followed Hook ever since. It also swallowed a clock, so its ticking warns him it's near and terrifies him. He's vain and obsessed with \"good form\", the manners of a proper gentleman.",
+     facts:[["How did Captain Hook lose his hand?","Peter Pan cut it off and fed it to a crocodile",["A shark bit it off","He lost it in a cannon blast","It froze in a winter storm"]],
+            ["Why does a ticking sound terrify Hook?","The crocodile that wants to eat him swallowed a clock",["It means the tide is turning","His ship's bell ticks before a storm","A fortune teller warned him about clocks"]],
+            ["What is the name of Hook's ship?","The Jolly Roger",["The Black Pearl","The Flying Dutchman","The Golden Hind"]]]},
+    {id:9, name:"The Cheshire Cat", short:"Cheshire Cat", title:"The Mischievous Gossip",
+     costume:"Cat ears, striped outfit, playful makeup",
+     personality:"Playful, mysterious, sarcastic, and delightfully unpredictable",
+     quote:"We're all mad here.",
+     lore:"From Carroll's Wonderland. A grinning cat who can vanish bit by bit until only its grin is left. It gives Alice puzzling directions and tells her \"we're all mad here.\" When the Queen orders it beheaded, only its head is visible, so the King, the Queen and the executioner argue over whether you can behead a head with no body.",
+     facts:[["What's unusual about the Cheshire Cat?","It can vanish, leaving only its grin",["It can fly","It only speaks in rhyme","It's the size of a horse"]],
+            ["Why couldn't the Cheshire Cat be beheaded?","Only its head was visible, so there was no body to cut it from",["It ran away","The executioner fell asleep","It has nine lives"]]]}
+  ];
+
+
+  const norm = s => s.toLowerCase().replace(/[^a-z]/g, "");
+  const pad = n => String(n).padStart(2, "0");
+
+  // ---------- tiny DOM helper ----------
+  function h(tag, attrs, ...kids){
+    const el = document.createElement(tag);
+    if (attrs) for (const [k,v] of Object.entries(attrs)){
+      if (v == null || v === false) continue;
+      if (k === "class") el.className = v;
+      else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? "" : v);
+    }
+    for (const kid of kids.flat()){
+      if (kid == null || kid === false) continue;
+      el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+    }
+    return el;
+  }
+
+  // ---------- state ----------
+  const state = {
+    step: "cards",
+    mode: "mixed",
+    quiz: null
+  };
+
+  const $ = id => document.getElementById(id);
+
+  // ---------- pictures (public-domain book illustrations, published next to the page) ----------
+  const IMAGES = {
+    1:{src:"img/white-rabbit.png",    pos:"50% 22%", credit:"John Tenniel, 1865"},
+    2:{src:"img/little-red.jpg",      pos:"72% 35%", credit:"Gustave Doré, 1862"},
+    3:{src:"img/king-of-hearts.png",  pos:"30% 16%", credit:"John Tenniel, 1865"},
+    4:{src:"img/mad-hatter.jpg",      pos:"50% 30%", credit:"John Tenniel, 1865"},
+    5:{src:"img/alice.png",           pos:"62% 28%", credit:"John Tenniel, 1865"},
+    6:{src:"img/big-bad-wolf.jpg",    pos:"30% 50%", credit:"Gustave Doré, 1862"},
+    7:{src:"img/queen-of-hearts.png", pos:"24% 48%", credit:"John Tenniel, 1865"},
+    8:{src:"img/captain-hook.png",    pos:"55% 35%", credit:"F. D. Bedford, 1911"},
+    9:{src:"img/cheshire-cat.png",    pos:"35% 50%", credit:"John Tenniel, 1865"}
+  };
+
+  // ---------- cards ----------
+  function cardEl(c, opts){
+    const pic = IMAGES[c.id];
+    const card = h("article", {class:"card", "aria-label": c.name, "data-id": c.id},
+      h("figure", {class:"plate"},
+        h("img", {src:pic.src, alt:"Book illustration of " + c.name, style:"object-position:" + pic.pos,
+                  loading: opts && opts.eager ? "eager" : "lazy", decoding:"async"}),
+        h("figcaption", null, pic.credit)),
+      h("div", {class:"idx", "aria-hidden":"true"}, h("small", null, "Card"), pad(c.id))
+    );
+    const body = h("div", {class:"body"},
+      h("h3", null, c.name),
+      h("p", {class:"role"}, c.title),
+      h("p", {class:"quote"}, "“" + c.quote + "”"));
+    const dl = h("dl");
+    const row = (label, text) => h("div", null, h("dt", null, label), h("dd", null, text));
+    dl.append(row("Backstory", c.lore));
+    dl.append(row("Costume ideas", c.costume));
+    dl.append(row("Personality", c.personality));
+    body.append(dl);
+    card.append(body);
+    return card;
+  }
+
+  const track = $("track");
+  function slides(){ return Array.from(track.children); }
+  function currentIndex(){
+    const n = slides().length, w = track.clientWidth || 1;
+    return Math.max(0, Math.min(n - 1, Math.round(track.scrollLeft / w)));
+  }
+  function goTo(i){
+    const n = slides().length; if (!n) return;
+    i = Math.max(0, Math.min(n - 1, i));
+    track.scrollTo({left: i * track.clientWidth});
+  }
+  function syncCarousel(){
+    const n = slides().length, i = currentIndex();
+    $("count").textContent = (i + 1) + " / " + n;
+    $("prev").disabled = i === 0;
+    $("next").disabled = i === n - 1;
+    $("dots").querySelectorAll(".dot").forEach((d, k) => d.setAttribute("aria-current", String(k === i)));
+  }
+
+  function renderCards(){
+    track.replaceChildren(...CHARS.map((c, k) => cardEl(c, {eager: k < 3})));
+    $("dots").replaceChildren(...CHARS.map((c, k) =>
+      h("button", {class:"dot", id:"dot-" + c.id, "aria-label":"Show " + c.name, title:c.name, onclick: () => goTo(k)})));
+    track.scrollLeft = 0;
+    syncCarousel();
+  }
+
+  let syncQueued = false;
+  track.addEventListener("scroll", () => {
+    if (syncQueued) return; syncQueued = true;
+    requestAnimationFrame(() => { syncQueued = false; syncCarousel(); });
+  }, {passive:true});
+  window.addEventListener("resize", syncCarousel);
+  $("prev").addEventListener("click", () => goTo(currentIndex() - 1));
+  $("next").addEventListener("click", () => goTo(currentIndex() + 1));
+  track.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight"){ e.preventDefault(); goTo(currentIndex() + 1); }
+    else if (e.key === "ArrowLeft"){ e.preventDefault(); goTo(currentIndex() - 1); }
+  });
+
+  // ---------- quiz building ----------
+  function shuffle(a){
+    a = a.slice();
+    for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+  function uniq(a){ const seen = new Set(); return a.filter(x => { const k = norm(x); if (seen.has(k)) return false; seen.add(k); return true; }); }
+
+  function mc(tag, q, answer, pool, note){
+    const wrong = shuffle(uniq(pool).filter(x => norm(x) !== norm(answer))).slice(0, 3);
+    if (wrong.length < 2) return null;
+    return {tag, q, answer, options: shuffle([answer, ...wrong]), note};
+  }
+
+  function allQuestions(){
+    const names = CHARS.map(o => o.short);
+    const qs = [];
+    CHARS.forEach(o => {
+      const rest = names.filter(n => n !== o.short);
+      qs.push(mc("Who's who", "Who is “" + o.title + "”?", o.short, rest, o.name + ": " + o.title + "."));
+      const dupes = CHARS.filter(x => x.id !== o.id && norm(x.quote) === norm(o.quote));
+      if (!dupes.length){
+        qs.push(mc("Who's who", "Who is likely to say “" + o.quote + "”?", o.short, rest, "That's the " + o.short + "'s line."));
+      }
+      qs.push(mc("Who's who", "Who might arrive wearing: " + o.costume.toLowerCase() + "?", o.short, rest, "Costume ideas for the " + o.short + "."));
+      qs.push(mc("Who's who", "Who is " + o.personality.charAt(0).toLowerCase() + o.personality.slice(1) + "?", o.short, rest, "That's the " + o.short + "'s personality."));
+      o.facts.forEach(f => qs.push(mc("Backstory: " + o.short, f[0], f[1], f[2], "From the " + o.short + "'s story.")));
+    });
+    return qs.filter(Boolean);
+  }
+
+  function buildQuiz(mode){
+    let qs = allQuestions();
+    if (mode === "who") qs = qs.filter(q => q.tag === "Who's who");
+    else if (mode === "lore") qs = qs.filter(q => q.tag.startsWith("Backstory"));
+    return {qs: shuffle(qs).slice(0, 12), i:0, score:0, picked:null, missed:[]};
+  }
+
+  // ---------- quiz rendering ----------
+  function renderQuizHead(){
+    document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)));
+  }
+
+  function renderQuiz(){
+    renderQuizHead();
+    const slot = $("quiz-slot");
+    const Q = state.quiz;
+    if (!Q || !Q.qs.length){ slot.replaceChildren(h("p", {class:"hint"}, "No questions available.")); return; }
+
+    if (Q.i >= Q.qs.length){ slot.replaceChildren(resultEl(Q)); return; }
+
+    const cur = Q.qs[Q.i];
+    const answered = Q.picked != null;
+    const letters = ["A","B","C","D"];
+    const opts = h("div", {class:"opts"}, cur.options.map((o, k) => {
+      let cls = "opt";
+      if (answered){
+        if (o === cur.answer) cls += " right";
+        else if (k === Q.picked) cls += " wrong";
+      }
+      return h("button", {class:cls, id:"opt-" + k, disabled: answered, onclick: () => choose(k)},
+        h("span", {class:"k"}, letters[k]), h("span", null, o));
+    }));
+
+    let fb = null;
+    if (answered){
+      const ok = cur.options[Q.picked] === cur.answer;
+      fb = h("p", {class:"feedback " + (ok ? "ok" : "no"), role:"status"},
+        ok ? "Correct." : "Not quite. The answer is: " + cur.answer,
+        cur.note ? h("span", {class:"note"}, cur.note) : null);
+    }
+
+    const pct = Math.round((Q.i + (answered ? 1 : 0)) / Q.qs.length * 100);
+    slot.replaceChildren(h("div", {class:"panel"},
+      h("div", {class:"meta"},
+        h("span", null, "Question " + (Q.i + 1) + " of " + Q.qs.length),
+        h("span", null, "Score " + Q.score)),
+      h("div", {class:"bar", "aria-hidden":"true"}, h("span", {style:"width:" + pct + "%"})),
+      h("p", {class:"tag"}, cur.tag),
+      h("p", {class:"q"}, cur.q),
+      opts,
+      fb,
+      h("div", {class:"actions"},
+        answered
+          ? h("button", {class:"btn", id:"next-q", onclick: nextQ}, Q.i + 1 < Q.qs.length ? "Next question" : "See results")
+          : h("span", {class:"hint"}, "Tap an answer, or press A–D."))
+    ));
+    if (answered){ const n = $("next-q"); if (n) n.focus({preventScroll:true}); }
+  }
+
+  function resultEl(Q){
+    const n = Q.qs.length, s = Q.score;
+    const ratio = s / n;
+    const verdict = ratio === 1 ? "Perfect. You're ready for the party."
+      : ratio >= .75 ? "Nearly there. Go over the ones you missed."
+      : ratio >= .5 ? "Good start. Re-read the cards and try again."
+      : "Keep practising. Read the cards once more, then retry.";
+    return h("div", {class:"panel result"},
+      h("h3", null, "Results"),
+      h("p", {class:"score"}, s + " / " + n),
+      h("p", null, verdict),
+      Q.missed.length ? h("div", {style:"display:grid; gap:10px"},
+        h("p", {class:"tag"}, "To review"),
+        h("ul", {class:"missed"}, Q.missed.map(m =>
+          h("li", null, h("span", {class:"mq"}, m.q), h("span", {class:"ma"}, m.answer))))) : null,
+      h("div", {class:"actions"},
+        Q.missed.length ? h("button", {class:"btn ghost", id:"retry-missed", onclick: retryMissed}, "Retry the ones I missed") : null,
+        h("button", {class:"btn", id:"new-quiz", onclick: () => { state.quiz = buildQuiz(state.mode); renderQuiz(); }}, "New quiz"))
+    );
+  }
+
+  function choose(k){
+    const Q = state.quiz;
+    if (!Q || Q.picked != null || Q.i >= Q.qs.length) return;
+    Q.picked = k;
+    const cur = Q.qs[Q.i];
+    if (cur.options[k] === cur.answer) Q.score++;
+    else Q.missed.push(cur);
+    renderQuiz();
+  }
+  function nextQ(){
+    const Q = state.quiz;
+    Q.i++; Q.picked = null;
+    renderQuiz();
+  }
+  function retryMissed(){
+    const missed = state.quiz.missed.map(q => ({...q, options: shuffle(q.options)}));
+    state.quiz = {qs: shuffle(missed), i:0, score:0, picked:null, missed:[]};
+    renderQuiz();
+  }
+
+  // ---------- steps ----------
+  function go(step){
+    state.step = step;
+    $("tab-cards").setAttribute("aria-selected", String(step === "cards"));
+    $("tab-quiz").setAttribute("aria-selected", String(step === "quiz"));
+    $("step-cards").hidden = step !== "cards";
+    $("step-quiz").hidden = step !== "quiz";
+    if (step === "quiz"){
+      if (!state.quiz) state.quiz = buildQuiz(state.mode);
+      renderQuiz();
+    }
+    window.scrollTo({top:0, behavior:"auto"});
+  }
+
+  // ---------- events ----------
+  $("tab-cards").addEventListener("click", () => go("cards"));
+  $("tab-quiz").addEventListener("click", () => go("quiz"));
+  $("to-quiz").addEventListener("click", () => go("quiz"));
+  document.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
+    state.mode = b.dataset.mode;
+    state.quiz = buildQuiz(state.mode);
+    renderQuiz();
+  }));
+  document.addEventListener("keydown", e => {
+    if (state.step !== "quiz" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target && e.target.tagName === "SELECT") return;
+    const Q = state.quiz; if (!Q || Q.i >= Q.qs.length) return;
+    const k = "abcd".indexOf(e.key.toLowerCase());
+    if (k >= 0 && k < Q.qs[Q.i].options.length && Q.picked == null){ e.preventDefault(); choose(k); }
+    else if (e.key === "Enter" && Q.picked != null && document.activeElement && document.activeElement.id !== "next-q"){ e.preventDefault(); nextQ(); }
+  });
+
+  renderCards();
+})();
+</script>
