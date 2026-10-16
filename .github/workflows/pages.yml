@@ -1,0 +1,64 @@
+name: Deploy rehearsal app to GitHub Pages
+
+# Publishes only the cards & quiz page and its illustrations.
+# Strategy.md and the other notes in this repo are never deployed.
+on:
+  push:
+    branches: [main]
+    paths:
+      - unbirthday-rehearsal.html
+      - img/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The page is authored without <!doctype>/<head>/<body> (the Artifact host adds them),
+      # so wrap it in a full document here. [hidden] must win over inline display styles.
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          {
+            printf '%s\n' \
+              '<!doctype html>' \
+              '<html lang="en">' \
+              '<head>' \
+              '<meta charset="utf-8">' \
+              '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' \
+              '<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>' \
+              '</head>' \
+              '<body>'
+            cat unbirthday-rehearsal.html
+            printf '%s\n' '</body>' '</html>'
+          } > _site/index.html
+          cp -r img _site/img
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
